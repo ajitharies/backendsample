@@ -103,6 +103,23 @@ const Users = mongoose.model("Users", {
   },
 });
 
+
+// Schema for creating category
+const Category = mongoose.model("Category", {
+  id: {
+    type: String,
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  banner: {
+    type: String,
+    required: true,
+  },
+});   
+
 // Schema for creating Product
 const Product = mongoose.model("Product", {
   id: {
@@ -435,6 +452,85 @@ app.post("/removeproduct", async (req, res) => {
   const product = await Product.findOneAndDelete({ id: req.body.id });
   console.log("Removed");
   res.json({success:true,name:req.body.name})
+});
+
+// add category
+app.post("/addcategory", async (req, res) => {
+  // create id from name by removing white spaces and lowering case
+  const id = req.body.name.replace(/\s+/g, "").toLowerCase();
+  const category = new Category({
+    id: id,
+    name: req.body.name,
+    banner: req.body.banner,
+  });
+  console.log(category);
+  await category.save();
+  console.log("Saved");
+  res.json({ success: true, name: req.body.name });
+});
+
+// Remove category
+app.post("/removecategory", async (req, res) => {
+  try {
+    const category = await Category.findByIdAndDelete(req.body.id);
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Category not found" });
+    }
+    console.log("Removed category:", category.name);
+    res.json({ success: true, name: category.name });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to remove category" });
+  }
+});
+
+// Edit category
+app.post("/editcategory", async (req, res) => {
+  try {
+    const { id, newName } = req.body;
+    const category = await Category.findByIdAndUpdate(
+      id,
+      { name: newName },
+      { new: true }
+    );
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Category not found" });
+    }
+    console.log("Updated category:", category.name);
+    res.json({ success: true, name: category.name });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Failed to edit category" });
+  }
+});
+
+// fetch category by id
+app.get("/category/:id", async (req, res) => {
+    console.log(req.params.id);
+    try {
+        const category = await Category.find({ id: req.params.id });
+        console.log(category);
+        res.json(category);  
+    }
+    catch (error) {
+        console.error(error);
+    }
+})
+
+app.get("/categories", async (req, res) => {
+  try {
+    const categories = await Category.find();
+    res.json(categories);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch categories" });
+  }
 });
 
 app.listen(port, (error) => {
